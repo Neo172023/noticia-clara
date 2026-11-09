@@ -69,6 +69,8 @@ button span { margin-left: .4rem; }
 .detail h3 { font-size: 1.1rem; }
 .detail ol { padding-left: 1.3rem; margin-bottom: 0; }
 .detail li + li { margin-top: .55rem; }
+.contradiction + .contradiction { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+.sources-panel { grid-column: 1 / -1; }
 .ref { font-weight: 700; white-space: nowrap; }
 .source-type { display: block; }
 .site-footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem 1rem; padding: 1.25rem 0; margin-top: 2.4rem; border-top: 1px solid var(--border); }
