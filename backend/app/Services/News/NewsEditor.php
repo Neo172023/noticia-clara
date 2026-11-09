@@ -44,7 +44,10 @@ En unverified resumí hasta seis afirmaciones sin corroboración o en disputa, c
 
 Solo si los datos corroborados permiten explicar el acontecimiento central, escribí un título informativo de hasta 140 caracteres y una redacción original, breve y neutral de hasta 1200 caracteres, con párrafos separados por líneas en blanco. Usá solo datos de facts, sin añadir fechas, cifras, causas, valoraciones o detalles inferidos. No copies oraciones de los artículos. Si no hay base suficiente, devolvé title y draft como cadenas vacías.
 PROMPT,
-            'input' => json_encode($sources, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
+            'input' => json_encode(
+                array_map(fn (array $source) => ['title' => $source['title'], 'text' => $source['text']], $sources),
+                JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR,
+            ),
         ]);
 
         $parts = $this->openAi->textParts($response);

@@ -21,18 +21,44 @@ class PublicPageFetcher
             $port = $uri->getScheme() === 'https' ? 443 : 80;
             $ip = $this->resolvePublicAddress($host);
             $url = (string) $uri;
-            $body = '';
-            $curl = curl_init($url);
-            curl_setopt_array($curl, [
+            $page = $this->download($url, "{$host}:{$port}:{$ip}");
+
+            if ($page === null) {
+                break;
+            }
+
+            if (in_array($page['status'], [301, 302, 303, 307, 308], true) && $page['redirect'] && $hop < self::MAX_REDIRECTS) {
+                $url = $this->redirectUrl($uri, $page['redirect']);
+
+                continue;
+            }
+
+            if ($page['status'] === 200 && preg_match('~^(text/html|application/xhtml\+xml)(?:\s*;|$)~i', $page['contentType'])) {
+                return ['url' => $url, 'html' => $page['body'], 'contentType' => $page['contentType']];
+            }
+
+            break;
+        }
+
+        throw new AnalysisException('No pudimos abrir la noticia. Es posible que el sitio restrinja el acceso, que el enlace haya caducado o que la página no sea un artículo HTML accesible.');
+    }
+
+    /** @return array{status: int, body: string, contentType: string, redirect: string|null}|null */
+    protected function download(string $url, string $pinnedAddress): ?array
+    {
+        $body = '';
+        $curl = curl_init($url);
+        try {
+            $configured = curl_setopt_array($curl, [
                 CURLOPT_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS,
                 CURLOPT_FOLLOWLOCATION => false,
                 CURLOPT_PROXY => '',
-                CURLOPT_RESOLVE => ["{$host}:{$port}:{$ip}"],
+                CURLOPT_RESOLVE => [$pinnedAddress],
                 CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4,
                 CURLOPT_SSL_VERIFYPEER => true,
                 CURLOPT_SSL_VERIFYHOST => 2,
                 CURLOPT_CONNECTTIMEOUT => 3,
-                CURLOPT_TIMEOUT => 6,
+                CURLOPT_TIMEOUT => 5,
                 CURLOPT_ENCODING => '',
                 CURLOPT_USERAGENT => 'NoticiaClara/1.0',
                 CURLOPT_HTTPHEADER => ['Accept: text/html, application/xhtml+xml'],
@@ -46,29 +72,19 @@ class PublicPageFetcher
                     return strlen($chunk);
                 },
             ]);
-            try {
-                $ok = curl_exec($curl);
-                $status = curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
-                $contentType = (string) curl_getinfo($curl, CURLINFO_CONTENT_TYPE);
-                $redirect = curl_getinfo($curl, CURLINFO_REDIRECT_URL);
-            } finally {
-                curl_close($curl);
+            if (! $configured || curl_exec($curl) === false) {
+                return null;
             }
 
-            if ($ok && in_array($status, [301, 302, 303, 307, 308], true) && $redirect && $hop < self::MAX_REDIRECTS) {
-                $url = $this->redirectUrl($uri, $redirect);
-
-                continue;
-            }
-
-            if ($ok && $status === 200 && preg_match('~^(text/html|application/xhtml\+xml)(?:\s*;|$)~i', $contentType)) {
-                return ['url' => $url, 'html' => $body, 'contentType' => $contentType];
-            }
-
-            break;
+            return [
+                'status' => curl_getinfo($curl, CURLINFO_RESPONSE_CODE),
+                'body' => $body,
+                'contentType' => (string) curl_getinfo($curl, CURLINFO_CONTENT_TYPE),
+                'redirect' => curl_getinfo($curl, CURLINFO_REDIRECT_URL) ?: null,
+            ];
+        } finally {
+            curl_close($curl);
         }
-
-        throw new AnalysisException('No pudimos abrir la noticia. Es posible que el sitio restrinja el acceso, que el enlace haya caducado o que la página no sea un artículo HTML accesible.');
     }
 
     private function redirectUrl(Uri $from, string $location): string

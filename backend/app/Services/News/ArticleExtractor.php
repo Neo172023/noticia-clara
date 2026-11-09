@@ -45,7 +45,12 @@ class ArticleExtractor
         }
 
         // Prefer the article body over the layout that contains it.
-        foreach (['//*[@itemprop="articleBody"]', '//article', '//main|//*[@role="main"]'] as $selector) {
+        foreach ([
+            '//*[@itemprop="articleBody" or @id="article-body" or contains(concat(" ", normalize-space(@class), " "), " entry-content ") or contains(concat(" ", normalize-space(@class), " "), " article-body ")]',
+            '//article',
+            '//*[contains(concat(" ", normalize-space(@class), " "), " nota ")]//*[contains(concat(" ", normalize-space(@class), " "), " txt ")]',
+            '//main|//*[@role="main"]',
+        ] as $selector) {
             $text = '';
             foreach ($xpath->query($selector) as $candidate) {
                 $paragraphs = [];

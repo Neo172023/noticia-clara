@@ -4,8 +4,8 @@ return [
 
     'openai' => [
         'key' => env('OPENAI_API_KEY'),
-        'search_model' => env('OPENAI_SEARCH_MODEL', 'gpt-5-mini'),
-        'editor_model' => env('OPENAI_EDITOR_MODEL', 'gpt-5-mini'),
+        'search_model' => env('OPENAI_SEARCH_MODEL', 'gpt-5.4-mini'),
+        'editor_model' => env('OPENAI_EDITOR_MODEL', 'gpt-5.4-mini'),
     ],
 
     /*
