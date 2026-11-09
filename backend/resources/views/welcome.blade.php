@@ -67,7 +67,7 @@
                         <button type="button" id="copy-draft" class="secondary" hidden>Copiar redacción</button>
                         <p id="copy-status" class="hint" role="status"></p>
                     @else
-                        <p class="notice">No pudimos generar una redacción verificable con las fuentes accesibles. Revisá la evidencia disponible abajo.</p>
+                        <p class="notice">{{ $result['draft_notice'] }} Revisá el análisis a continuación.</p>
                     @endif
                 </div>
                 <div class="details-grid">
@@ -85,11 +85,27 @@
                         @endforelse
                     </section>
                     <section class="panel detail" aria-labelledby="claims-title">
-                        <h3 id="claims-title">Afirmaciones no verificadas</h3>
+                        <h3 id="claims-title">Afirmaciones no corroboradas</h3>
                         @forelse ($result['unverified'] as $claim)
                             <p>{{ $claim }}</p>
                         @empty
                             <p>El análisis no registró afirmaciones adicionales sin verificar.</p>
+                        @endforelse
+                    </section>
+                    <section class="panel detail" aria-labelledby="contradictions-title">
+                        <h3 id="contradictions-title">Afirmaciones contradictorias</h3>
+                        @forelse ($result['contradictions'] as $claim)
+                            <div class="contradiction">
+                                @foreach (['original' => 'Versión original', 'contrast' => 'Versión de contraste'] as $version => $label)
+                                    @php($sourceId = $claim['sources'][$loop->index])
+                                    <p><strong>{{ $label }}</strong><br>{{ $claim[$version] }}
+                                        <a class="ref" href="{{ $result['sources'][$sourceId]['url'] }}" target="_blank" rel="noopener noreferrer"
+                                            aria-label="Fuente {{ $sourceId + 1 }}: {{ $result['sources'][$sourceId]['title'] }}">[{{ $sourceId + 1 }}]</a>
+                                    </p>
+                                @endforeach
+                            </div>
+                        @empty
+                            <p>El análisis no identificó versiones incompatibles en las fuentes accesibles.</p>
                         @endforelse
                     </section>
                     <section class="panel detail" aria-labelledby="language-title">
@@ -100,7 +116,7 @@
                             <p>El análisis no detectó expresiones sensacionalistas.</p>
                         @endforelse
                     </section>
-                    <section class="panel detail" aria-labelledby="sources-title">
+                    <section class="panel detail sources-panel" aria-labelledby="sources-title">
                         <h3 id="sources-title">Fuentes consultadas</h3>
                         <ol>
                             @foreach ($result['sources'] as $id => $source)
@@ -115,7 +131,7 @@
         @else
             <section class="workflow" aria-label="Cómo funciona">
                 <article><span>01</span><h2>Recuperá</h2><p>Leemos el texto accesible del artículo y comprobamos su relación con la provincia.</p></article>
-                <article><span>02</span><h2>Contrastá</h2><p>Buscamos cobertura independiente del mismo acontecimiento y separamos los datos de las afirmaciones pendientes.</p></article>
+                <article><span>02</span><h2>Contrastá</h2><p>Buscamos cobertura independiente y distinguimos los hechos corroborados, las afirmaciones pendientes y las versiones contradictorias.</p></article>
                 <article><span>03</span><h2>Reformulá</h2><p>Generamos un título informativo y una redacción neutral cuando la evidencia lo permite.</p></article>
             </section>
         @endisset
